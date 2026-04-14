@@ -1,11 +1,14 @@
 package handler
 
 import (
-				"strconv"
+		"strconv"
         "github.com/wanxsky/kitchen-api/internal/domain"
         "github.com/gofiber/fiber/v2"
         "gorm.io/gorm"
+		"github.com/go-playground/validator/v10"
 )
+
+var validate = validator.New()
 
 type ProductHandler struct {
         DB *gorm.DB
@@ -23,7 +26,13 @@ func (h *ProductHandler) Create (c *fiber.Ctx) error {
                 return c.Status(400).JSON(fiber.Map{"status": false, "error": "Bad Request"})
         }
 
-        h.DB.Create(product)
+		if err := validate.Struct(product); err != nil {
+		return c.Status(400).JSON(fiber.Map{ "status": false, "error": "Bad Request", "detail": err.Error() })
+	}
+
+	if err := h.DB.Create(product).Error; err != nil {
+		return c.Status(500).JSON(fiber.Map{ "status": false, "error": "Internal Server Error" })
+	}
         return c.Status(201).JSON(fiber.Map{ "status": true, "data": product })
 }
 
@@ -34,13 +43,26 @@ func (h *ProductHandler) Update (c *fiber.Ctx) error {
   if err != nil {
     return c.Status(400).JSON(fiber.Map{"status": false, "error": "ID harus berupa angka" })
   }
+
   if err := h.DB.First(&product, id).Error; err != nil {
     return c.Status(404).JSON(fiber.Map{"status": false, "error": "Product tidak ditemukan"})
   }
   if err := c.BodyParser(&product); err != nil {
     return c.Status(400).JSON(fiber.Map{"status": false, "error": "Format tidak sesuai"})
   }
-  h.DB.Save(&product)
+	if err := validate.Struct(product); err != nil {
+		return c.Status(400).JSON(fiber.Map{
+			"status": false,
+			"error": "Bad Request",
+			"detail": err.Error(),
+		})
+	}
+	if err := h.DB.Save(&product).Error; err != nil {
+		return c.Status(500).JSON(fiber.Map{
+			"status": false,
+			"error": "Internal Server Error",
+		})
+	}
   return c.Status(200).JSON(fiber.Map{ "status": true, "data": product})
 }
 

@@ -3,6 +3,8 @@ import (
 	"github.com/wanxsky/kitchen-api/internal/domain"
 	"github.com/wanxsky/kitchen-api/internal/handler"
 	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v2/middleware/logger"
+	"github.com/gofiber/fiber/v2/middleware/recover"
 	"gorm.io/gorm"
 	"gorm.io/driver/sqlite"
 	"gorm.io/driver/postgres"
@@ -29,6 +31,8 @@ func main() {
 	db.AutoMigrate(&domain.Product{})
 	productHandler := handler.ProductHandler{DB: db}
 	app := fiber.New()
+	app.Use(logger.New())
+	app.Use(recover.New())
 	
 	app.Get("/products", productHandler.GetAll)
 	app.Get("/products/:id", productHandler.Get)
