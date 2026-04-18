@@ -29,7 +29,11 @@ func main() {
 	}
 
 	db.AutoMigrate(&domain.Product{})
+	db.AutoMigrate(&domain.Category{})
+
 	productHandler := handler.ProductHandler{DB: db}
+	categoryHandler := handler.CategoryHandler{DB: db}
+
 	app := fiber.New()
 	app.Use(logger.New())
 	app.Use(recover.New())
@@ -39,5 +43,8 @@ func main() {
 	app.Post("/products", productHandler.Create)
 	app.Put("/products/:id", productHandler.Update)
 	app.Delete("/products/:id", productHandler.Delete)
+
+	app.Get("/categories", categoryHandler.GetAll)
+	app.Post("/categories", categoryHandler.Create)
 	app.Listen(":3000")
 }

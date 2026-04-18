@@ -2,13 +2,10 @@ package handler
 
 import (
 		"strconv"
-        "github.com/wanxsky/kitchen-api/internal/domain"
-        "github.com/gofiber/fiber/v2"
-        "gorm.io/gorm"
-		"github.com/go-playground/validator/v10"
+    "github.com/wanxsky/kitchen-api/internal/domain"
+    "github.com/gofiber/fiber/v2"
+    "gorm.io/gorm"
 )
-
-var validate = validator.New()
 
 type ProductHandler struct {
         DB *gorm.DB
@@ -16,7 +13,7 @@ type ProductHandler struct {
 
 func (h *ProductHandler) GetAll (c *fiber.Ctx) error {
         var products []domain.Product
-        h.DB.Find(&products)
+        h.DB.Preload("Category").Find(&products)
         return c.JSON(products)
 }
 
@@ -33,6 +30,7 @@ func (h *ProductHandler) Create (c *fiber.Ctx) error {
 	if err := h.DB.Create(product).Error; err != nil {
 		return c.Status(500).JSON(fiber.Map{ "status": false, "error": "Internal Server Error" })
 	}
+	h.DB.Preload("Category").First(product, product.ID)
         return c.Status(201).JSON(fiber.Map{ "status": true, "data": product })
 }
 
@@ -63,6 +61,9 @@ func (h *ProductHandler) Update (c *fiber.Ctx) error {
 			"error": "Internal Server Error",
 		})
 	}
+
+	h.DB.Preload("Category").First(&product, product.ID)
+
   return c.Status(200).JSON(fiber.Map{ "status": true, "data": product})
 }
 
@@ -74,7 +75,7 @@ func (h *ProductHandler) Get (c *fiber.Ctx) error {
     return c.Status(400).JSON(fiber.Map{"status": false, "error": "ID harus berupa angka"})
   }
   
-  if err := h.DB.First(&product, id).Error; err != nil {
+  if err := h.DB.Preload("Category").First(&product, id).Error; err != nil {
     return c.Status(404).JSON(fiber.Map{"status": false, "error": "Product tidak ditemukan"})
   }
   return c.Status(200).JSON(fiber.Map{ "status": true, "data": product})
